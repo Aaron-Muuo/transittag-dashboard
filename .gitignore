@@ -1,0 +1,16 @@
+# Dependencies
+node_modules/
+
+# Environment — NEVER commit this
+.env
+
+# Vite build output
+dist/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/
