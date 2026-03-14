@@ -103,7 +103,7 @@ This is a clean and widely-used pattern in IoT dashboards. The bridge is minimal
 ### 1. Clone the Repository
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/transittag-dashboard.git
+git clone https://github.com/Aaron-Muuo/transittag-dashboard.git
 cd transittag-dashboard
 ```
 
@@ -198,13 +198,13 @@ Click any message in the left sidebar to view its full raw JSON payload — usef
 
 ## 🔐 Environment Variables Reference
 
-| Variable | Description | Example |
-|---|---|---|
+| Variable | Description | Example                    |
+|---|---|----------------------------|
 | `MQTT_BROKER` | Full broker URL with protocol and port | `mqtt://byte-iot.net:1883` |
-| `MQTT_USERNAME` | MQTT authentication username | `wayne123` |
-| `MQTT_PASSWORD` | MQTT authentication password | `hunter2` |
-| `MQTT_TOPIC` | Topic wildcard to subscribe to | `"/topic/transittag/#"` |
-| `WS_PORT` | Local WebSocket port for the bridge | `4001` |
+| `MQTT_USERNAME` | MQTT authentication username | `myusername`               |
+| `MQTT_PASSWORD` | MQTT authentication password | `mypassword**`             |
+| `MQTT_TOPIC` | Topic wildcard to subscribe to | `"/topic/transittag/#"`    |
+| `WS_PORT` | Local WebSocket port for the bridge | `4001`                     |
 
 > **Note on topic syntax:** Wrap your topic in quotes in the `.env` file if it contains a `#` wildcard, e.g. `MQTT_TOPIC="/topic/transittag/#"`. This prevents shell interpretation issues.
 
@@ -215,7 +215,7 @@ Click any message in the left sidebar to view its full raw JSON payload — usef
 **Bridge says "Connection refused" or "getaddrinfo EAI_AGAIN"**
 - Check your `MQTT_BROKER` value in `.env` — make sure the hostname and port are correct
 - Confirm your machine has internet access
-- Try pinging the broker: `ping your-broker-host`
+- Try pinging the broker: `ping byte-iot.net:1883`
 
 **Dashboard stays "Disconnected" after clicking Connect**
 - Make sure `server.js` is running in the other terminal
