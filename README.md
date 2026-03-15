@@ -21,7 +21,7 @@
 
 A real-time IoT telematics dashboard for monitoring **TransitTag** devices over MQTT. Built with **React + Vite** on the frontend and a lightweight **Node.js WebSocket bridge** on the backend.
 
-![Dashboard Screenshot](src/assets/img/screenshot_3.png)
+![Dashboard Screenshot](src/assets/img/screenshot_10.png)
 ![Dashboard Screenshot](src/assets/img/screenshot_4.png)
 ![Dashboard Screenshot](src/assets/img/screenshot_5.png)
 
