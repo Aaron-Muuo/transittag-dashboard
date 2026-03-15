@@ -1,22 +1,152 @@
 # 📡 TransitTag MQTT Dashboard
+## Inventing School
 
-![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)
+![Version](https://img.shields.io/badge/version-1.1.0-blue.svg)
 ![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)
 ![React](https://img.shields.io/badge/react-%2320232a.svg?style=flat&logo=react&logoColor=%2361DAFB)
 ![NodeJS](https://img.shields.io/badge/node.js-6DA55F?style=flat&logo=node.js&logoColor=white)
 
-## Lesson 1 - Inventing School
 
+## Changelog
 
-
-A real-time IoT telematics dashboard for monitoring **TransitTag** devices over MQTT. Built with **React + Vite** on the frontend and a lightweight **Node.js WebSocket bridge** on the backend.
-
-![Dashboard Screenshot](src/assets/img/screenshot_1.png)
-![Dashboard Screenshot](src/assets/img/screenshot_2.png)
+| Version                          | Date            | Desc                                                                                       |
+|----------------------------------|-----------------|--------------------------------------------------------------------------------------------|
+| `1.0.0`                          | 13th March 2026 | Initial App                                                                                |
+| `1.1.0`                          | 15th March 2026 | 1. Maps tab for location tracking (Leafletjs)<br/> 2. Debug Console<br/> 3. UI Enhancement |
+|   |         |                                                                                            |
 
 ---
 
-## 🗂️ Project Structure
+### Lesson 1 - Building a dashboard to display raw data from MQTT Broker
+
+A real-time IoT telematics dashboard for monitoring **TransitTag** devices over MQTT. Built with **React + Vite** on the frontend and a lightweight **Node.js WebSocket bridge** on the backend.
+
+![Dashboard Screenshot](src/assets/img/screenshot_3.png)
+![Dashboard Screenshot](src/assets/img/screenshot_4.png)
+![Dashboard Screenshot](src/assets/img/screenshot_5.png)
+
+## Tech Stack
+
+| Layer | Technology | Purpose |
+|---|---|---|
+| UI Framework | React 18 + Vite | Dashboard interface |
+| MQTT Client | `mqtt` npm package | Bridge connects to broker |
+| WebSocket Server | `ws` npm package | Bridge serves browser clients |
+| Environment Config | `dotenv` | Loads credentials from `.env` |
+| Styling | Inline React styles | No CSS framework needed |
+
+---
+## 1. App Overview
+
+### 1.1 Sidebar (Left Panel)
+The sidebar is your connection control centre. Enter the WebSocket bridge URL
+(default `ws://localhost:4001`) and click **CONNECT**. The status indicator
+shows four states — **Disconnected**, **Connecting**, **Connected**, and
+**Error**. Once connected, every incoming MQTT message appears in the message
+list below, showing its type badge (HEARTBEAT, WIFI, RFID, LOGIN) and the
+topic it arrived on. Click any message to jump straight to its raw JSON in the
+JSON tab. You can clear the list at any time without disconnecting.
+
+> The sidebar talks to `server.js`, not directly to the MQTT broker.
+> `server.js` handles the broker connection over TCP and forwards packets
+> to the browser over WebSocket.
+
+![Dashboard Screenshot](src/assets/img/screenshot_3.png)
+
+---
+
+### 1.2 Dashboard Tab
+The dashboard tab shows the **latest state** of the connected device as live
+cards — one card per message type. Cards update automatically every time a new
+message arrives for that type. There are four card types:
+
+- **Login Card** (green) — confirms the device is online and shows its IMEI.
+- **Heartbeat Card** (blue) — the main telemetry card. Shows battery level,
+  GSM signal strength, GPS coordinates, speed, satellite count, ACC status,
+  alarm state, and whether the device is moving.
+- **WiFi Card** (purple) — shows the device's hotspot name (SSID), channel,
+  MAC address, and a list of all currently connected client devices with their
+  IP and MAC addresses.
+- **RFID Card** (amber) — shows the last 5 card tap events, including the
+  user ID, station ID, scan status, and scan time.
+
+![Dashboard Screenshot](src/assets/img/screenshot_4.png)
+
+---
+
+### 1.3 Map Tab
+The map tab plots every device on a live OpenStreetMap. Each device gets its
+own colour, which stays consistent for the whole session. When no GPS fix is
+available (coordinates are `0, 0`) the pin is placed at the centre of Nairobi
+with a warning in the popup. Once a real GPS fix arrives the pin moves to the
+correct location automatically.
+
+Key map features:
+- **Multiple device pins** — one pin per unique IMEI, all visible at once.
+- **Trail line** — a dashed polyline showing the last 50 recorded GPS
+  positions so you can see where the device has been.
+- **Popup** — click any pin to see full device details: battery, speed, GSM,
+  ACC, alarm, satellite count, and last seen time.
+- **Device legend** — a floating panel (top right) lists all known devices
+  with their colour, last coordinates, speed, and a LIVE / IDLE badge.
+- **Auto-centre** — the map automatically fits all devices in view when GPS
+  data arrives.
+- **Tab badge** — the Map tab label shows a count of how many devices are
+  being tracked.
+
+![Dashboard Screenshot](src/assets/img/screenshot_5.png)
+![Dashboard Screenshot](src/assets/img/screenshot_7.png)
+---
+
+### 1.4 JSON Tab
+The JSON tab shows the full raw payload of whichever message you selected in
+the sidebar. Click any message row in the sidebar list and the JSON tab opens
+automatically with the complete pretty-printed JSON. This is useful for
+inspecting exactly what the device is sending — field names, data types, and
+values — without any formatting or transformation applied.
+
+![Dashboard Screenshot](src/assets/img/screenshot_6.png)
+
+---
+
+### 1.5 Debug Console (Bottom Panel)
+The debug console is toggled on and off with the **🐛 DEBUG** button in the
+top bar. When open it slides up from the bottom of the screen and shows a
+timestamped log of every WebSocket event between the browser and `server.js`:
+
+| Level     | What it means                                          |
+|-----------|--------------------------------------------------------|
+| `info`    | Connection attempts and subscription confirmations     |
+| `success` | Successful connection or subscription                  |
+| `warn`    | Disconnections and reconnect attempts                  |
+| `error`   | WebSocket errors — usually means server.js is not running |
+| `msg`     | Every incoming MQTT message with its topic and type    |
+
+The debug console (currently)* shows **browser ↔ server.js** events only. If the MQTT
+broker itself is refusing connections, those errors will appear in your
+terminal where `server.js` is running, not here.
+
+![Dashboard Screenshot](src/assets/img/screenshot_8.png)
+![Dashboard Screenshot](src/assets/img/screenshot_9.png)
+
+
+## 2. Architecture Overview
+
+```
+MQTT Broker (byte-iot.net:1883)
+        ↓  TCP — handled by server.js
+server.js (Node.js bridge)
+        ↓  WebSocket ws://localhost:4001
+React Dashboard (browser)
+        ├── Sidebar        → connection control + message list
+        ├── Dashboard Tab  → live device state cards
+        ├── Map Tab        → GPS pins + trails on OpenStreetMap
+        ├── JSON Tab       → raw message inspector
+        └── Debug Console  → WebSocket event log
+```
+
+
+## 3. Project Structure
 
 ```
 transittag-dashboard/
@@ -24,8 +154,7 @@ transittag-dashboard/
 │   ├── App.jsx          # React dashboard UI
 │   ├── main.jsx         # React entry point
 │   └── assets/img
-│       ├── screenshot_1.png
-│       └── screenshot_2.png
+│       ├── (images)
 ├── server.js            # Node.js WebSocket bridge
 ├── index.html
 ├── vite.config.js
@@ -35,9 +164,7 @@ transittag-dashboard/
 └── README.md
 ```
 
----
-
-## ⚙️ How It Works
+## 4. How It Works
 
 This dashboard listens to live MQTT messages from a TransitTag IoT device and displays them as real-time UI cards.
 
@@ -52,7 +179,7 @@ It handles **4 message types** from the device:
 
 ---
 
-## 🌉 Architecture — The Node.js Bridge & Why We Need It
+### 4.1 Architecture — The Node.js Bridge & Why We Need It
 
 This is the most important design decision in the project. Here's why a bridge is necessary:
 
@@ -89,33 +216,31 @@ The bridge:
 ```
 
 This is a clean and widely-used pattern in IoT dashboards. The bridge is minimal — it does nothing except receive and forward. All the display logic lives in React.
+ 
 
-
----
-
-## 🛠️ Installation
+## 5. Installation
 
 ### Prerequisites
 
 - [Node.js](https://nodejs.org/) v18 or higher
 - npm v9 or higher
 
-### 1. Clone the Repository
+### 5.1. Clone the Repository
 
 ```bash
 git clone https://github.com/Aaron-Muuo/transittag-dashboard.git
 cd transittag-dashboard
 ```
 
-### 2. Install Dependencies
+### 5.2. Install Dependencies
 
 ```bash
 npm install
 ```
 
-This installs everything needed: `react`, `vite`, `mqtt`, `ws`, and `dotenv`.
+This installs everything needed: `leaflet`, `react`, `vite`, `mqtt`, `ws`, and `dotenv`.
 
-### 3. Configure Your Credentials
+### 5.3. Configure Your Credentials
 
 Copy the example env file and fill in your broker details:
 
@@ -135,9 +260,8 @@ WS_PORT=4001
 
 > ⚠️ **Never commit your `.env` file.** It's already listed in `.gitignore`.
 
----
 
-## 🚀 Running the Project
+## 6. Running the Project
 
 You need **two terminals** running at the same time — one for the bridge, one for the UI.
 
@@ -179,24 +303,7 @@ http://localhost:5173
 
 NB: Takes a while to receive data (Exercise patience)
 
----
-
-## 🖥️ Using the Dashboard
-
-### Dashboard Tab
-Shows live data cards, auto-updated whenever a new message arrives:
-
-- **💙 Heartbeat Card** — Battery level bar, GSM signal bars, GPS fix status, speed, ACC on/off, alarm state, movement status
-- **🟣 WiFi Card** — Access point SSID, channel, MAC address, and a list of all currently connected client devices with their IPs
-- **🟡 RFID Card** — The last 5 card scans with user ID, station number, and scan time
-- **🟢 Login Card** — Shown when the device first connects
-
-### JSON Tab
-Click any message in the left sidebar to view its full raw JSON payload — useful for debugging or inspecting raw data from the device.
-
----
-
-## 🔐 Environment Variables Reference
+## 7. Environment Variables Reference
 
 | Variable | Description | Example                    |
 |---|---|----------------------------|
@@ -210,7 +317,7 @@ Click any message in the left sidebar to view its full raw JSON payload — usef
 
 ---
 
-## 🔧 Troubleshooting
+## 8. Troubleshooting
 
 **Bridge says "Connection refused" or "getaddrinfo EAI_AGAIN"**
 - Check your `MQTT_BROKER` value in `.env` — make sure the hostname and port are correct
@@ -229,30 +336,8 @@ Click any message in the left sidebar to view its full raw JSON payload — usef
 - Run `npm install` again to ensure all packages are installed
 - Check your `.env` file exists and has no syntax errors
 
----
 
-## 📦 Tech Stack
-
-| Layer | Technology | Purpose |
-|---|---|---|
-| UI Framework | React 18 + Vite | Dashboard interface |
-| MQTT Client | `mqtt` npm package | Bridge connects to broker |
-| WebSocket Server | `ws` npm package | Bridge serves browser clients |
-| Environment Config | `dotenv` | Loads credentials from `.env` |
-| Styling | Inline React styles | No CSS framework needed |
-
----
-
-## 🗺️ Roadmap / Ideas
-
-- [ ] Map view for GPS coordinates (Leaflet.js)
-- [ ] Historical message log with export to CSV
-- [ ] Multi-device support (track more than one IMEI)
-- [ ] Alert notifications (alarm state, low battery)
-
----
-
-## 📄 License
+## 9. License
 
 MIT — free to use, modify, and distribute.
 

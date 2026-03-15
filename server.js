@@ -40,7 +40,7 @@ mqttClient.on("message", (topic, message) => {
     const payload = message.toString();
     const packet = JSON.stringify({ topic, payload, receivedAt: new Date().toISOString() });
 
-    console.log(`📨 [${topic}] → ${payload.slice(0, 80)}...`);
+    console.log(`📨 [${topic}] → ${payload}`);
 
     wss.clients.forEach((ws) => {
         if (ws.readyState === 1) { // 1 = OPEN
