@@ -1,7 +1,7 @@
 # 📡 TransitTag MQTT Dashboard
 ## Inventing School
 
-![Version](https://img.shields.io/badge/version-1.1.0-blue.svg)
+![Version](https://img.shields.io/badge/version-1.2.0-blue.svg)
 ![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)
 ![React](https://img.shields.io/badge/react-%2320232a.svg?style=flat&logo=react&logoColor=%2361DAFB)
 ![NodeJS](https://img.shields.io/badge/node.js-6DA55F?style=flat&logo=node.js&logoColor=white)
@@ -9,11 +9,11 @@
 
 ## Changelog
 
-| Version                          | Date            | Desc                                                                                       |
-|----------------------------------|-----------------|--------------------------------------------------------------------------------------------|
-| `1.0.0`                          | 13th March 2026 | Initial App                                                                                |
-| `1.1.0`                          | 15th March 2026 | 1. Maps tab for location tracking (Leafletjs)<br/> 2. Debug Console<br/> 3. UI Enhancement |
-|   |         |                                                                                            |
+| Version | Date            | Desc                                                                                       |
+|---------|-----------------|--------------------------------------------------------------------------------------------|
+| `1.0.0` | 13th March 2026 | Initial App                                                                                |
+| `1.1.0` | 15th March 2026 | 1. Maps tab for location tracking (Leafletjs)<br/> 2. Debug Console<br/> 3. UI Enhancement |
+| `1.2.0` | 19th March 2026 | GPS Simulation                                                                       |
 
 ---
 
@@ -96,6 +96,103 @@ Key map features:
 
 ![Dashboard Screenshot](src/assets/img/screenshot_5.png)
 ![Dashboard Screenshot](src/assets/img/screenshot_7.png)
+
+
+### 1.3.1 GPS Simulation
+
+When a real device has no GPS fix — or is stationary — the GPS
+simulator can generate fake heartbeat packets for multiple devices driving real
+Nairobi routes. Simulated packets go through the exact same `broadcast()`
+pipeline as real MQTT messages, so the dashboard treats them identically.
+
+The simulator lives in `gpsSimulator.js` and is called from `server.js`.
+ 
+
+### a. How to Enable
+
+Two lines in `server.js` control the simulator. Both must be active:
+
+```js
+// Line 4 — import at the top of server.js
+import { startSimulator } from "./gpsSimulator.js";
+ 
+// Line 73 — call after the WebSocket server starts
+startSimulator(broadcast);
+```
+
+Both lines are included and active by default. Restart `server.js` after
+any change:
+
+```bash
+node server.js
+```
+
+When the simulator is running you will see this in the terminal:
+
+```
+🗺️  GPS Simulator ACTIVE — 3 devices
+   📍 SIM-001-WESTLANDS
+   📍 SIM-002-KAREN
+   📍 SIM-003-THIKA
+   ⏱  Heartbeat every 3s
+ 
+🗺️  SIM [NDS] -1.2791, 36.8101  42km/h ↗317° 🔋85%
+🗺️  SIM [REN] -1.3089, 36.7998  38km/h ↗212° 🔋62%
+🗺️  SIM [IKA] -1.2645, 36.8367  55km/h ↗045° 🔋91%
+```
+
+![Dashboard Screenshot](src/assets/img/screenshot_11.png)
+
+Preview
+
+![Transittag Gif](src/assets/gif/transittag_gif.gif)
+
+### b. Simulation Routes
+
+Three devices follow real Nairobi road routes, looping continuously:
+
+| Device | Route | Key Landmarks |
+|---|---|---|
+| `SIM-001-WESTLANDS` | CBD → Westlands → Parklands → CBD | Kencom, Museum Hill, Sarit Centre, Mpaka Rd |
+| `SIM-002-KAREN` | CBD → Ngong Road → Karen → CBD | Haile Selassie, Prestige Plaza, Dagoretti Corner, Karen shops |
+| `SIM-003-THIKA` | CBD → Thika Road → Garden City → CBD | Globe roundabout, Pangani, Muthaiga, Garden City Mall |
+
+Movement between waypoints is smoothly interpolated with a small random
+jitter (~5 metres) added each tick so the trail looks natural on the map
+rather than jumping between fixed points. Battery drains slowly over time
+and GSM signal fluctuates slightly, just like a real device.
+
+To adjust simulator behaviour, edit the constants at the top of `gpsSimulator.js`:
+
+```js
+const SIM_INTERVAL_MS    = 3000; // how often to emit a heartbeat (ms)
+const STEPS_PER_WAYPOINT = 10;   // smoothing steps between waypoints
+                                 // (lower = faster, more angular movement)
+```
+
+To add a new simulated device, add an entry to `SIM_DEVICES` in
+`gpsSimulator.js` and define its waypoints as a new route in the `ROUTES`
+object using `[latitude, longitude]` pairs from Google Maps or OpenStreetMap.
+ 
+
+### c. How to Disable
+
+Comment out both lines in `server.js` and restart:
+
+```js
+// import { startSimulator } from "./gpsSimulator.js"; // ← commented out
+// startSimulator(broadcast);                           // ← commented out
+```
+
+```bash
+node server.js
+```
+
+The `gpsSimulator.js` file stays in the project untouched — it does nothing
+until `startSimulator()` is called. Real device data continues to flow
+normally whether the simulator is on or off.
+ 
+
 ---
 
 ### 1.4 JSON Tab
